@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>Synapz - Game Lobby</title>
+  <link rel="stylesheet" href="index.css">
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <style data-purpose="custom-animations">
+    /* --- Smooth transitions for interactive elements --- */
+    .lobby-btn {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    .lobby-btn:hover {
+      border-color: #d922ff !important;
+      background-color: rgba(217, 34, 255, 0.05) !important;
+      box-shadow: 0 0 15px rgba(217, 34, 255, 0.2);
+    }
+
+    /* Pulse animation for the "Waiting" status indicator */
+    @keyframes subtle-pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+    .pulse-glow {
+      animation: subtle-pulse 2s infinite ease-in-out;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #000;
+      overflow: hidden;
+    }
+
+    #background-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background-size: cover;
+      background-repeat: no-repeat;
+    }
+
+    .star {
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center min-h-screen text-white font-sans">
+
+  <div data-purpose="interactive-starfield" id="background-canvas"></div>
+  
+  <main class="relative z-10 w-full max-w-2xl px-6 py-12">
+    <div class="bg-black/80 backdrop-blur-sm border border-gray-800 rounded-3xl p-8 md:p-12 shadow-2xl">
+      
+      <header class="text-center mb-8">
+        <h1 class="text-4xl font-bold tracking-tight mb-2">Game Lobby</h1>
+        <p class="text-gray-400 text-sm flex items-center justify-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-purple-500 pulse-glow"></span>
+          Waiting for players to link up...
+        </p>
+      </header>
+
+      <section class="bg-gray-900/40 border border-gray-800 rounded-2xl p-4 mb-6 flex items-center justify-between">
+        <div>
+          <p class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Room Code</p>
+          <p class="text-2xl font-mono font-bold tracking-widest text-purple-400" id="room-code">SYNAPZ-7X92</p>
+        </div>
+        <button id="copy-btn" class="lobby-btn px-4 py-2 bg-gray-900 border border-gray-700 rounded-xl text-sm text-gray-300 hover:text-white flex items-center gap-2">
+          <span>Copy</span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+          </svg>
+        </button>
+      </section>
+
+      <section class="grid grid-cols-2 gap-4 mb-8 text-center">
+        <div class="bg-gray-950/60 border border-gray-900 rounded-xl py-3 px-4">
+          <p class="text-xs text-gray-500 block mb-1">Arena</p>
+          <span id="lobby-arena" class="text-sm font-medium text-gray-200">💻 Code Clash</span>
+        </div>
+        <div class="bg-gray-950/60 border border-gray-900 rounded-xl py-3 px-4">
+          <p class="text-xs text-gray-500 block mb-1">Difficulty</p>
+          <span id="lobby-difficulty" class="text-sm font-medium text-purple-400 border border-purple-500/30 bg-purple-500/10 px-3 py-0.5 rounded-full inline-block">Medium</span>
+        </div>
+      </section>
+
+      <section class="mb-10">
+        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-1">Players Ready (2/4)</h3>
+        <div class="space-y-3" id="player-list">
+          
+          <div class="flex items-center justify-between bg-gray-900/30 border border-gray-800/60 rounded-xl p-4">
+            <div class="flex items-center gap-3">
+              <div id="host-avatar" class="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center font-bold text-sm">R</div>
+              <span id="host-username" class="font-medium text-gray-200">Ramesh Babu</span>
+            </div>
+            <span class="text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2.5 py-1 rounded-md font-medium uppercase tracking-wider">Host</span>
+          </div>
+
+          <div class="flex items-center justify-between bg-gray-900/20 border border-gray-800/40 rounded-xl p-4">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-sm">N</div>
+              <span class="font-medium text-gray-300">Nexus_Walker</span>
+            </div>
+            <span class="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-md font-medium">Ready</span>
+          </div>
+
+          <div class="flex items-center justify-between border border-dashed border-gray-800/80 rounded-xl p-4 opacity-50">
+            <span class="text-sm text-gray-600 italic">Waiting for connection...</span>
+            <span class="w-2 h-2 rounded-full bg-gray-700"></span>
+          </div>
+
+        </div>
+      </section>
+
+      <footer>
+        <button id="launch-btn" class="w-full bg-[#d922ff] hover:bg-[#c01ee0] text-white font-bold py-5 rounded-2xl text-xl shadow-lg shadow-purple-500/20 transform active:scale-[0.98] transition-all">
+          Launch Match
+        </button>
+      </footer>
+    </div>
+  </main>
+
+  <script>
+    // Copy Room Code Functionality
+    document.getElementById('copy-btn').addEventListener('click', function() {
+      const roomCode = document.getElementById('room-code').innerText;
+      navigator.clipboard.writeText(roomCode).then(() => {
+        const btnText = this.querySelector('span');
+        btnText.innerText = 'Copied!';
+        setTimeout(() => { btnText.innerText = 'Copy'; }, 2000);
+      });
+    });
+
+    // Sync state settings extracted out of localStorage
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedUsername = localStorage.getItem('synapz_username');
+      const savedArena = localStorage.getItem('synapz_arena');
+      const savedDifficulty = localStorage.getItem('synapz_difficulty');
+
+      if (savedUsername) {
+        const hostNameEl = document.getElementById('host-username');
+        const hostAvatarEl = document.getElementById('host-avatar');
+        if (hostNameEl) hostNameEl.innerText = savedUsername;
+        if (hostAvatarEl) hostAvatarEl.innerText = savedUsername.charAt(0).toUpperCase();
+      }
+
+      if (savedArena) {
+        const arenaEl = document.getElementById('lobby-arena');
+        if (arenaEl) {
+          // If the string lacks an emoji prefix, choose an appropriate icon decoration fallback
+          if (!savedArena.match(/[\uD800-\uDBFF][\uDC00-\uDFFF]/) && !savedArena.includes('💻') && !savedArena.includes('🔬')) {
+            if(savedArena.toLowerCase().includes('lab')) arenaEl.innerText = '🔬 ' + savedArena;
+            else if(savedArena.toLowerCase().includes('code')) arenaEl.innerText = '💻 ' + savedArena;
+            else if(savedArena.toLowerCase().includes('cine')) arenaEl.innerText = '🎬 ' + savedArena;
+            else arenaEl.innerText = '🌍 ' + savedArena;
+          } else {
+            arenaEl.innerText = savedArena;
+          }
+        }
+      }
+
+      if (savedDifficulty) {
+        const diffEl = document.getElementById('lobby-difficulty');
+        if (diffEl) diffEl.innerText = savedDifficulty;
+      }
+
+      // Generate random alpha-numeric session signature code
+      const roomCodeEl = document.getElementById('room-code');
+      if (roomCodeEl) {
+        const randomCode = "SYNAPZ-" + Math.random().toString(36).substring(2, 6).toUpperCase() + Math.random().toString(36).substring(2, 4).toUpperCase();
+        roomCodeEl.innerText = randomCode;
+      }
+    });
+  </script>
+
+  <script data-purpose="starfield-logic">
+    const container = document.getElementById('background-canvas');
+    const starCount = 150;
+    const stars = [];
+    const repelRadius = 150;
+    const mouse = { x: -1000, y: -1000 };
+
+    function initStars() {
+      container.innerHTML = '';
+      stars.length = 0;
+      for (let i = 0; i < starCount; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        const size = Math.random() * 2 + 1;
+        const initialX = Math.random() * window.innerWidth;
+        const initialY = Math.random() * window.innerHeight;
+        
+        star.style.width = `${size}px`;
+        star.style.height = `${size}px`;
+        star.style.opacity = Math.random() * 0.7 + 0.3;
+        
+        const starObj = {
+          element: star,
+          baseX: initialX,
+          baseY: initialY,
+          x: initialX,
+          y: initialY,
+          vx: (Math.random() - 0.5) * 0.2,
+          vy: (Math.random() - 0.5) * 0.2,
+          repelX: 0,
+          repelY: 0
+        };
+        
+        star.style.left = `${starObj.x}px`;
+        star.style.top = `${starObj.y}px`;
+        container.appendChild(star);
+        stars.push(starObj);
+      }
+    }
+
+    function updateStars() {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+
+      stars.forEach(star => {
+        star.baseX += star.vx;
+        star.baseY += star.vy;
+
+        if (star.baseX < 0) star.baseX = width;
+        if (star.baseX > width) star.baseX = 0;
+        if (star.baseY < 0) star.baseY = height;
+        if (star.baseY > height) star.baseY = 0;
+
+        const dx = mouse.x - star.baseX;
+        const dy = mouse.y - star.baseY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        let targetRepelX = 0;
+        let targetRepelY = 0;
+
+        if (distance < repelRadius) {
+          const force = (repelRadius - distance) / repelRadius;
+          const angle = Math.atan2(dy, dx);
+          targetRepelX = -Math.cos(angle) * force * 60;
+          targetRepelY = -Math.sin(angle) * force * 60;
+        }
+
+        star.repelX += (targetRepelX - star.repelX) * 0.1;
+        star.repelY += (targetRepelY - star.repelY) * 0.1;
+
+        star.x = star.baseX + star.repelX;
+        star.y = star.baseY + star.repelY;
+        
+        star.element.style.left = `${star.x}px`;
+        star.element.style.top = `${star.y}px`;
+      });
+      requestAnimationFrame(updateStars);
+    }
+
+    window.addEventListener('mousemove', (e) => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    });
+
+    window.addEventListener('resize', initStars);
+    initStars();
+    updateStars();
+  </script>
+</body>
+</html>

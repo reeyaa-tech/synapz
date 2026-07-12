@@ -1,0 +1,210 @@
+@import "tailwindcss";
+
+:root {
+  --text: #cbd5e1;
+  --text-h: #ffffff;
+  --bg: #fff;
+  --border: #e5e4e7;
+  --code-bg: #f4f3ec;
+  --accent: #aa3bff;
+  --accent-bg: rgba(170, 59, 255, 0.1);
+  --accent-border: rgba(170, 59, 255, 0.5);
+  --social-bg: rgba(244, 243, 236, 0.5);
+  --shadow: rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  font: 18px/145% var(--sans);
+  letter-spacing: 0.18px;
+  color-scheme: light dark;
+  color: var(--text);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (max-width: 1024px) {
+  :root {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #9ca3af;
+    --text-h: #f3f4f6;
+    --bg: #16171d;
+    --border: #2e303a;
+    --code-bg: #1f2028;
+    --accent: #c084fc;
+    --accent-bg: rgba(192, 132, 252, 0.15);
+    --accent-border: rgba(192, 132, 252, 0.5);
+    --social-bg: rgba(47, 48, 58, 0.5);
+    --shadow: rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+  }
+}
+
+/* --- THE CLEAN, RAW RESETS (Safeguarded for Tailwind Setup) --- */
+@layer base {
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #000000;
+    overflow: hidden; /* Stops scrolling glitches entirely */
+  }
+
+  /* React Root Entry Wrapper node compatibility */
+  #root {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    min-height: 100vh;
+  }
+}
+
+/* --- FIXED GLASS CARD GRID --- */
+.glass-card {
+  position: relative;
+  z-index: 10;
+  background: rgba(10, 10, 12, 0.7); /* Custom fallback card bg */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 32px;
+  
+  width: 100%;
+  max-width: 650px; 
+  padding: 36px; 
+  
+  box-shadow:
+    0 25px 60px rgba(0, 0, 0, 0.6),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: center; /* Beautifully centers "Synapz" title text lines */
+}
+
+/* Aurora background ambient glow mesh behind your text forms */
+.glass-card::before {
+  content: "";
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background: #9333ea;
+  filter: blur(150px);
+  opacity: .1;
+  top: -100px;
+  left: -100px;
+  z-index: -1;
+}
+
+/* --- CARD INPUTS & COMPONENTS --- */
+.username-input {
+  width: 100%;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  border-radius: 18px;
+  color: white;
+  font-size: 18px;
+  outline: none;
+}
+
+.arena-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(120, 180, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 22px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  padding: 20px;
+}
+
+.arena-card:hover {
+  transform: translateY(-4px) scale(1.02);
+  border-color: #60a5fa;
+  box-shadow:
+    0 0 20px rgba(96, 165, 250, 0.4),
+    0 0 40px rgba(96, 165, 250, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.arena-card.active {
+  border: 1px solid #a855f7;
+  background: rgba(168, 85, 247, 0.15);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+}
+
+.difficulty-btn {
+  padding: 12px 24px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+}
+
+.difficulty-btn.active {
+  background: linear-gradient(135deg, #9333ea, #c026d3);
+  box-shadow: 0 0 25px rgba(168, 85, 247, 0.5);
+  border-color: transparent;
+}
+
+.create-btn {
+  width: 100%;
+  padding: 18px;
+  border: none;
+  border-radius: 18px;
+  color: white;
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  background: linear-gradient(135deg, #8b5cf6, #d946ef);
+  box-shadow: 0 10px 30px rgba(168, 85, 247, 0.4);
+  transition: all 0.2s ease;
+}
+
+.create-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 35px rgba(168, 85, 247, 0.5);
+}
+
+/* --- TYPOGRAPHY --- */
+h1, h2 {
+  font-family: var(--heading);
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+h1 {
+  font-size: 56px;
+  letter-spacing: -1.68px;
+  margin: 16px 0;
+}
+
+@media (max-width: 1024px) {
+  h1 { font-size: 36px; }
+}
+
+h2 {
+  font-size: 24px;
+  line-height: 118%;
+  letter-spacing: -0.24px;
+  margin: 0 0 8px;
+}
+
+@media (max-width: 1024px) {
+  h2 { font-size: 20px; }
+}
+
+p { margin: 0; }
