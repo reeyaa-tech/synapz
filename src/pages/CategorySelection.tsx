@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { socket } from '../socket';
 (window as any).socket = socket;
+import confetti from 'canvas-confetti';
 
 const categories = [
   { id: "programming", emoji: "💻", label: "Code Clash" },
@@ -8,6 +9,15 @@ const categories = [
   { id: "movies", emoji: "🎬", label: "CineStorm" },
   { id: "gk", emoji: "🌍", label: "World Rush" },
 ];
+
+const generateRandomRoomCode = (): string => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+};
 
 // ==========================================
 // SCREEN 1: ROOM SETUP / CREATION
@@ -95,12 +105,17 @@ interface GameLobbyProps {
 
 export function GameLobby({ roomCode, onLaunchStart, chosenCategory, isHost = true, username }: GameLobbyProps) {
   const [isLaunching, setIsLaunching] = useState(false);
+  const [activeCode] = useState<string>(roomCode || generateRandomRoomCode());
+  const [copied, setCopied] = useState(false);
+  
+  // 📜 Rules Modal State
+  const [showRulesModal, setShowRulesModal] = useState(false);
 
   useEffect(() => {
-    if (!roomCode) return;
-    console.log(`📡 Sending join_room request for code: ${roomCode}`);
-    socket.emit('join_room', { roomCode });
-  }, [roomCode]);
+    if (!activeCode) return;
+    console.log(`📡 Sending join_room request for code: ${activeCode}`);
+    socket.emit('join_room', { roomCode: activeCode });
+  }, [activeCode]);
 
   useEffect(() => {
     const handleMatchLoading = (matchData: any) => {
@@ -115,13 +130,25 @@ export function GameLobby({ roomCode, onLaunchStart, chosenCategory, isHost = tr
     };
   }, [onLaunchStart]); 
 
-  const handleLaunchMatch = () => {
-    setIsLaunching(true); 
-    (window as any).currentRoomCode = roomCode;
+  const handleCopyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(activeCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy code: ', err);
+    }
+  };
 
-    console.log("📤 Emitting 'host_launched_match' event with payload:", { roomCode, arenaId: chosenCategory });
+  // Triggers when host accepts rules inside the popup
+  const handleConfirmStart = () => {
+    setShowRulesModal(false);
+    setIsLaunching(true); 
+    (window as any).currentRoomCode = activeCode;
+
+    console.log("📤 Emitting 'host_launched_match':", { roomCode: activeCode, arenaId: chosenCategory });
     socket.emit('host_launched_match', { 
-      roomCode: roomCode,
+      roomCode: activeCode,
       arenaId: chosenCategory || "programming",
     });
   };
@@ -130,20 +157,45 @@ export function GameLobby({ roomCode, onLaunchStart, chosenCategory, isHost = tr
     <div className="text-white flex items-center justify-center min-h-screen w-full bg-black p-6">
       <div id="lobby-container" className="w-full max-w-3xl p-8 border border-zinc-800/60 rounded-3xl bg-zinc-950/40 backdrop-blur-md shadow-2xl flex flex-col gap-5">
         <h2 className="text-3xl font-extrabold text-center">Game Lobby</h2>
-        <p className="text-center text-zinc-400">Room Code: <span className="text-purple-400 font-mono select-all">{roomCode}</span></p>
         
-        <div className="flex flex-col gap-2 my-4">
+        <div className="flex items-center justify-between p-4 bg-zinc-900/80 border border-zinc-800 rounded-2xl my-2">
+          <div className="flex flex-col text-left">
+            <span className="text-xs text-zinc-500 uppercase tracking-widest font-bold">Room Code</span>
+            <span className="text-2xl font-mono font-bold text-purple-400 tracking-wider">{activeCode}</span>
+          </div>
+
+          <button
+            onClick={handleCopyCode}
+            className={`px-4 py-2 text-xs font-bold rounded-xl border transition-all ${
+              copied
+                ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border-zinc-700'
+            }`}
+          >
+            {copied ? '✓ Copied' : '📋 Copy Code'}
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-2 my-2">
           <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 flex justify-between">
-            <span> {username || "Player 1"}</span> <span className="text-purple-400 font-bold">HOST</span>
+            <span>{username || "Player 1"}</span> <span className="text-purple-400 font-bold">HOST</span>
           </div>
           <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 flex justify-between">
             <span>Player 2</span> <span className="text-green-400">Ready</span>
           </div>
         </div>
 
+        {/* View Rules Button */}
+        <button
+          onClick={() => setShowRulesModal(true)}
+          className="w-full py-2.5 text-xs font-semibold text-zinc-400 hover:text-white border border-zinc-800 hover:border-zinc-700 bg-zinc-900/40 rounded-xl transition-all"
+        >
+          📖 Read Match Rules & Point System
+        </button>
+
         {isHost ? (
           <button
-            onClick={handleLaunchMatch}
+            onClick={() => setShowRulesModal(true)} // Opens Pop-up
             disabled={isLaunching}
             className={`w-full py-4 font-extrabold tracking-wider rounded-xl text-white bg-purple-600 transition-all duration-300 ${
               isLaunching ? 'opacity-50 cursor-not-allowed bg-purple-800' : 'hover:bg-purple-500 hover:shadow-[0_0_25px_rgba(168,85,247,0.4)]'
@@ -157,6 +209,14 @@ export function GameLobby({ roomCode, onLaunchStart, chosenCategory, isHost = tr
           </div>
         )}
       </div>
+
+      {/* 📜 RULES POPUP MODAL */}
+      <QuizRulesModal 
+        isOpen={showRulesModal}
+        onClose={() => setShowRulesModal(false)}
+        onConfirm={handleConfirmStart}
+        isHost={isHost}
+      />
     </div>
   );
 }
@@ -207,8 +267,95 @@ export function MatchLoadingScreen({ onCountdownComplete, gameData: _gameData }:
 }
 
 // ==========================================
-// SCREEN 4: ACTIVE INTERACTIVE ARENA
+// RULES & REGULATIONS MODAL
 // ==========================================
+interface RulesModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  isHost?: boolean;
+}
+
+export function QuizRulesModal({ isOpen, onClose, onConfirm, isHost }: RulesModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fadeIn">
+      <div className="bg-zinc-950 border border-zinc-800 p-6 md:p-8 rounded-3xl max-w-lg w-full text-white shadow-2xl flex flex-col gap-6 relative max-h-[90vh] overflow-y-auto">
+        
+        {/* Header */}
+        <div className="text-center">
+          <div className="inline-block px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-400 text-xs font-bold uppercase tracking-widest mb-2">
+            Match Protocol
+          </div>
+          <h2 className="text-2xl font-black tracking-wide">Rules & Regulations</h2>
+          <p className="text-zinc-400 text-xs mt-1">Review arena constraints before initialization</p>
+        </div>
+
+        {/* Rules List */}
+        <div className="flex flex-col gap-3 text-sm">
+          
+          <div className="p-3.5 bg-zinc-900/60 border border-zinc-800 rounded-2xl flex items-start gap-3">
+            <span className="text-xl">🎯</span>
+            <div>
+              <p className="font-bold text-white text-xs">Round Structure</p>
+              <p className="text-zinc-400 text-xs mt-0.5">10 synchronized rounds total. Every question is dynamically generated by AI.</p>
+            </div>
+          </div>
+
+          <div className="p-3.5 bg-zinc-900/60 border border-zinc-800 rounded-2xl flex items-start gap-3">
+            <span className="text-xl">⏱️</span>
+            <div>
+              <p className="font-bold text-white text-xs">Time Limit & Scoring</p>
+              <p className="text-zinc-400 text-xs mt-0.5">
+                You have <strong className="text-purple-400">30 seconds</strong> per round. <br />
+                • Correct Answer: <strong className="text-green-400">100 base pts + timeLeft</strong><br />
+                • Incorrect / Time Out: <strong className="text-red-400">0 pts</strong>.
+              </p>
+            </div>
+          </div>
+
+          <div className="p-3.5 bg-zinc-900/60 border border-zinc-800 rounded-2xl flex items-start gap-3">
+            <span className="text-xl">🔒</span>
+            <div>
+              <p className="font-bold text-white text-xs">Single Submission</p>
+              <p className="text-zinc-400 text-xs mt-0.5">Selections are instant and locked upon clicking. No takebacks!</p>
+            </div>
+          </div>
+
+          <div className="p-3.5 bg-zinc-900/60 border border-zinc-800 rounded-2xl flex items-start gap-3">
+            <span className="text-xl">⚔️</span>
+            <div>
+              <p className="font-bold text-white text-xs">Real-Time Sync</p>
+              <p className="text-zinc-400 text-xs mt-0.5">Both players progress together. Round advances 4s after answer reveals.</p>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-3 pt-2">
+          <button
+            onClick={onClose}
+            className="flex-1 py-3.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-xl font-bold text-xs text-zinc-300 transition-all"
+          >
+            Cancel
+          </button>
+          
+          <button
+            onClick={onConfirm}
+            className="flex-1 py-3.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold text-xs tracking-wider transition-all shadow-[0_0_20px_rgba(168,85,247,0.4)]"
+          >
+            {isHost ? "Accept & Launch" : "I'm Ready"}
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+
 interface ActiveGameArenaProps {
   onMatchExit: () => void;
   gameData: {
@@ -227,16 +374,59 @@ export function ActiveGameArena({ onMatchExit, gameData }: ActiveGameArenaProps)
   const [selectedAnswerIndex, setSelectedAnswerIndex] = useState<number | null>(null);
   const [revealedCorrectIndex, setRevealedCorrectIndex] = useState<number | null>(null);
   const [isGameOver, setIsGameOver] = useState<boolean>(false);
+  
+  // 🚪 State for Leave Confirmation Modal
+  const [showLeaveModal, setShowLeaveModal] = useState<boolean>(false);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Countdown clock loop logic
+  // 🎊 1. CONFETTI EFFECT (Moved inside the component)
+  useEffect(() => {
+    if (isGameOver && playerScore > opponentScore) {
+      // Center Initial Burst
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+
+      // Side Stream Burst for 2 seconds
+      const duration = 2 * 1000;
+      const animationEnd = Date.now() + duration;
+      const colors = ['#4ade80', '#a855f7', '#ec4899', '#3b82f6'];
+
+      const frame = () => {
+        confetti({
+          particleCount: 3,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: colors
+        });
+        confetti({
+          particleCount: 3,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: colors
+        });
+
+        if (Date.now() < animationEnd) {
+          requestAnimationFrame(frame);
+        }
+      };
+
+      frame();
+    }
+  }, [isGameOver, playerScore, opponentScore]);
+
+  // Clock Countdown logic
   useEffect(() => {
     if (hasAnswered) return;
 
     if (timeLeft === 0) {
       setHasAnswered(true);
-      setSelectedAnswerIndex(-1); // Marks selection value as a manual skip trigger
+      setSelectedAnswerIndex(-1);
       setRevealedCorrectIndex(currentQuestion?.correctAnswerIndex);
 
       socket.emit('submit_answer', {
@@ -254,11 +444,9 @@ export function ActiveGameArena({ onMatchExit, gameData }: ActiveGameArenaProps)
     return () => clearTimeout(timer);
   }, [timeLeft, hasAnswered, currentQuestion, gameData]);
 
-  // Sync WebSocket data feeds
+  // WebSocket listeners
   useEffect(() => {
     const handleNextQuestion = (questionData: any) => {
-      console.log("🎯 Next round received from server:", questionData);
-      
       setSelectedAnswerIndex(null);
       setRevealedCorrectIndex(null);
       setHasAnswered(false);
@@ -271,8 +459,7 @@ export function ActiveGameArena({ onMatchExit, gameData }: ActiveGameArenaProps)
       setOpponentScore(data.opponent);
     };
 
-    const handleGameOver = (data: any) => {
-      console.log("🏁 Match Complete! Final numbers:", data);
+    const handleGameOver = (_data: any) => {
       setIsGameOver(true);
     };
 
@@ -280,7 +467,6 @@ export function ActiveGameArena({ onMatchExit, gameData }: ActiveGameArenaProps)
     socket.on('score-update', handleScoreUpdate);
     socket.on('game_over', handleGameOver);
 
-    console.log(`📡 Signaling arena_ready for room: ${gameData?.roomCode}`);
     socket.emit('arena_ready', {
       roomCode: gameData?.roomCode || (window as any).currentRoomCode
     });
@@ -302,35 +488,72 @@ export function ActiveGameArena({ onMatchExit, gameData }: ActiveGameArenaProps)
     setRevealedCorrectIndex(correctIdx);
 
     const isCorrect = index === correctIdx;
-    const pointsEarned = isCorrect ? 100 + (timeLeft * 5) : 0;
+    const pointsEarned = isCorrect ? 100 + timeLeft : 0;
 
     socket.emit('submit_answer', {
       roomCode: gameData?.roomCode || (window as any).currentRoomCode,
       selectedIndex: index,
       points: pointsEarned
     });
-
-    setTimeout(() => {
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTo({
-          top: scrollContainerRef.current.scrollHeight,
-          behavior: 'smooth'
-        });
-      }
-    }, 80);
   };
 
+  const confirmLeave = () => {
+    socket.emit('leave_room', { roomCode: gameData?.roomCode || (window as any).currentRoomCode });
+    onMatchExit();
+  };
+
+  // Game Over Victory / Defeat Screen
   if (isGameOver) {
+    const isWinner = playerScore > opponentScore;
+    const isTie = playerScore === opponentScore;
+
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen w-full bg-black text-white p-6">
-        <div className="glass-card max-w-md w-full mx-auto p-8 bg-zinc-950 border border-zinc-800 text-center rounded-3xl shadow-2xl">
-          <h2 className="text-3xl font-black text-purple-400 mb-2">🏆 BATTLE COMPLETE</h2>
-          <p className="text-zinc-400 mb-6">10 rounds processed successfully.</p>
-          <div className="p-4 bg-white/5 rounded-xl border border-white/10 mb-6">
-            <p className="font-bold text-lg">Your Final Score: {playerScore} pts</p>
-            <p className="text-zinc-500 text-sm mt-1">Opponent Score: {opponentScore} pts</p>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-6 text-white select-none">
+        <div className="glass-card max-w-md w-full mx-auto p-8 bg-zinc-950 border border-zinc-800 text-center rounded-3xl shadow-2xl relative overflow-hidden">
+          
+          {/* Background Ambient Glow */}
+          <div className={`absolute -top-24 -left-24 w-48 h-48 rounded-full blur-3xl opacity-20 pointer-events-none ${isWinner ? 'bg-green-500' : 'bg-purple-500'}`} />
+          
+          {isWinner ? (
+            <>
+              <h2 className="text-5xl font-black text-green-400 tracking-wider mb-2 drop-shadow-[0_0_25px_rgba(74,222,128,0.5)] animate-pulse">
+                YOU WON!!
+              </h2>
+              <p className="text-zinc-400 text-sm mb-6">Fantastic performance in the arena!</p>
+            </>
+          ) : isTie ? (
+            <>
+              <h2 className="text-3xl font-black text-amber-400 tracking-wider mb-2">
+                IT'S A TIE!
+              </h2>
+              <p className="text-zinc-400 text-sm mb-6">Neck and neck till the very end.</p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-3xl font-black text-red-400 tracking-wider mb-2">
+                MATCH OVER
+              </h2>
+              <p className="text-zinc-400 text-sm mb-6">Good effort! Try again to claim victory.</p>
+            </>
+          )}
+
+          {/* Final Scoreboard Breakdown */}
+          <div className="p-4 bg-zinc-900/60 border border-zinc-800 rounded-2xl mb-6 flex justify-around items-center">
+            <div>
+              <span className="text-xs text-zinc-500 uppercase font-semibold">Your Score</span>
+              <p className="text-2xl font-black text-purple-400">{playerScore}</p>
+            </div>
+            <div className="h-8 w-[1px] bg-zinc-800" />
+            <div>
+              <span className="text-xs text-zinc-500 uppercase font-semibold">Opponent</span>
+              <p className="text-2xl font-black text-pink-400">{opponentScore}</p>
+            </div>
           </div>
-          <button onClick={onMatchExit} className="w-full py-4 bg-purple-600 rounded-xl font-bold hover:bg-purple-500 transition-all">
+
+          <button 
+            onClick={onMatchExit} 
+            className="w-full py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 rounded-xl font-bold tracking-wider transition-all shadow-[0_0_20px_rgba(168,85,247,0.3)]"
+          >
             Return to Dashboard
           </button>
         </div>
@@ -340,13 +563,16 @@ export function ActiveGameArena({ onMatchExit, gameData }: ActiveGameArenaProps)
 
   return (
     <div ref={scrollContainerRef} className="fixed inset-0 text-white flex flex-col items-center justify-start w-full h-full bg-transparent p-4 md:p-6 overflow-y-auto">
-      <div className="glass-card max-w-3xl w-full mx-auto p-6 bg-zinc-950/40 backdrop-blur-md rounded-3xl border border-zinc-800/60 text-white my-auto flex flex-col gap-4">
+      <div className="glass-card max-w-3xl w-full mx-auto p-6 bg-zinc-950/40 backdrop-blur-md rounded-3xl border border-zinc-800/60 text-white my-auto flex flex-col gap-4 relative">
         
         <div className="flex justify-between items-center w-full mb-2">
           <span className="text-purple-400 font-bold uppercase tracking-wider text-sm">
             Active Battle {currentQuestion?.roundNumber ? `— Round ${currentQuestion.roundNumber}/10` : ""}
           </span>
-          <button onClick={onMatchExit} className="py-2 px-4 rounded-xl bg-zinc-900 border border-zinc-800 text-sm hover:border-red-500/50 transition-all">
+          <button 
+            onClick={() => setShowLeaveModal(true)} 
+            className="py-2 px-4 rounded-xl bg-zinc-900 border border-zinc-800 text-sm hover:border-red-500/50 hover:bg-red-500/10 text-zinc-300 hover:text-red-400 transition-all"
+          >
             Leave Match
           </button>
         </div>
@@ -371,7 +597,7 @@ export function ActiveGameArena({ onMatchExit, gameData }: ActiveGameArenaProps)
           </div>
         </div>
 
-        {/* Interactive Panel */}
+        {/* Interactive Question Panel */}
         {currentQuestion && (
           <div className="flex flex-col gap-5 w-full text-left">
             <p className="text-lg text-white font-medium bg-white/5 p-4 rounded-xl border border-white/10">
@@ -411,30 +637,41 @@ export function ActiveGameArena({ onMatchExit, gameData }: ActiveGameArenaProps)
                 );
               })}
             </div>
-
-            {hasAnswered && (
-              <div className="mt-6 p-4 rounded-xl bg-zinc-900 border border-zinc-800 text-center">
-                {selectedAnswerIndex === -1 ? (
-                  <>
-                    <div className="text-amber-500 font-bold text-lg"> Time's Up! </div>
-                    <p className="text-zinc-500 text-sm">Moving to next round sequence...</p>
-                  </>
-                ) : selectedAnswerIndex === revealedCorrectIndex ? (
-                  <>
-                    <div className="text-green-500 font-bold text-lg">🔥 Correct!</div>
-                    <p className="text-zinc-500 text-sm">Moving to the next question...</p>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-red-500 font-bold text-lg">❌ Incorrect Answer! 0 pts.</div>
-                    <p className="text-zinc-500 text-sm">Moving to the next question...</p>
-                  </>
-                )}
-              </div>
-            )}
           </div>
         )}
+
       </div>
+
+      {/* Leave Match Confirmation Modal */}
+      {showLeaveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="bg-zinc-950 border border-zinc-800 p-6 rounded-3xl max-w-sm w-full text-center shadow-2xl flex flex-col gap-4">
+            <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center mx-auto text-xl font-bold">
+              ⚠️
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white">Leave Match?</h3>
+              <p className="text-sm text-zinc-400 mt-1">
+                Leaving now will forfeit your current progress and exit the arena.
+              </p>
+            </div>
+            <div className="flex gap-3 mt-2">
+              <button
+                onClick={() => setShowLeaveModal(false)}
+                className="flex-1 py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-xl font-semibold text-sm transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmLeave}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-semibold text-sm transition-all shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+              >
+                Confirm Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
