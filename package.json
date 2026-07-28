@@ -4,8 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "start": "node index.js",
+    "build": "echo 'No build step required'"
     "dev": "vite",
-    "build": "tsc && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
