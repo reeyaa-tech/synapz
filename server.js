@@ -14,7 +14,13 @@ app.use(express.json());
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:5173", 
+    origin: [
+      "https://synapz.com",
+      "https://www.synapz.com",
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "https://synapz-mauve.vercel.app",
+    ],
     methods: ["GET", "POST"]
   }
 });
@@ -33,7 +39,6 @@ const QuizSchema = {
   required: ["question", "options", "correctAnswerIndex"]
 };
 
-// Fixed variable declaration conflict inside prompt generation
 async function generateGeminiQuizQuestion(category, askedQuestions = []) {
   try {
     const model = ai.getGenerativeModel({
@@ -185,10 +190,8 @@ io.on('connection', (socket) => {
       return; 
     }
 
-    // Reset tracker for next round cycle
     gameState.answeredPlayers.clear();
 
-    // 4-second buffer delay before triggering next round
     setTimeout(async () => {
       if (gameState.questionCount < 10) {
         gameState.questionCount += 1;
