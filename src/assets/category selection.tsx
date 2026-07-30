@@ -69,7 +69,7 @@ export default function CategorySelection() {
           ))}
         </div>
 
-        <button className="w-full mt-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-700">
+        <button className="w-full py-4 mt-2 font-bold tracking-wider rounded-xl bg-gradient-to-r from-zinc-900 via-neutral-800 to-zinc-900 border border-zinc-800 bg-[length:200%_auto] text-zinc-100 transition-all duration-300 transform hover:bg-right hover:scale-[1.005] hover:border-zinc-700 hover:shadow-[0_0_20px_rgba(255,255,255,0.08)] active:scale-[0.995]">
           ⚡ Create Room
         </button>
       </div>
