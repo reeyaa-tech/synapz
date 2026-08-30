@@ -74,5 +74,5 @@ export default defineConfig([
 ```
 =======
 # synapz
-A fast-paced, real-time multiplayer quiz game where minds clash and speed wins.
+This is a modern, interactive quiz platform that combines learning and gameplay, allowing users to test their knowledge through dynamic quizzes and track their performance.
 >>>>>>> 80af42de143f7f4dbf939e36907325f71268b940
