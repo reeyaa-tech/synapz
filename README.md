@@ -1,4 +1,4 @@
->>>>>>> HEAD
+<<<<<<< HEAD
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
@@ -10,7 +10,7 @@ Currently, two official plugins are available:
 
 ## React Compiler
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see (https://react.dev/learn/react-compiler/installation).
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
 ## Expanding the ESLint configuration
 
@@ -72,6 +72,7 @@ export default defineConfig([
   },
 ])
 ```
+- =======
 # synapz
 This is a modern, interactive quiz platform that combines learning and gameplay, allowing users to test their knowledge through dynamic quizzes and track their performance.
 >>>>>>> 80af42de143f7f4dbf939e36907325f71268b940
