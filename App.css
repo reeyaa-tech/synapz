@@ -188,7 +188,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  min-height: 500px;
+  min-height: 500px; /* Gives it enough space to grow */
   padding: 2rem;
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(10px);
@@ -202,13 +202,13 @@
 .input-container {
   position: relative;
   width: 100%;
-  height: 140px;
+  height: 140px; /* Fixed height for the text area box */
 }
 
 /* Lock TIME'S UP inside that specific container */
 .overlay-text {
   position: absolute;
-  inset: 0;
+  inset: 0; /* Covers only the .input-container */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -221,6 +221,7 @@
 .vibe-card {
   margin-top: 1rem;
   width: 100%;
+   /* No 'absolute' positioning here! */
 }
 
 /* Ensure the absolute overlay stays INSIDE the textarea box only */
@@ -230,7 +231,7 @@
 }
 
 textarea {
-  margin-bottom: 0 !important;
+  margin-bottom: 0 !important;  /* Prevents textarea from pushing elements weirdly */
 }
 
 .hud {
@@ -293,4 +294,4 @@ textarea {
 .counter:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
+- }
