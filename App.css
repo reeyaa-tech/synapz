@@ -221,7 +221,7 @@
 .vibe-card {
   margin-top: 1rem;
   width: 100%;
-/* No 'absolute' positioning here! */
+  /* No 'absolute' positioning here! */
 }
 
 /* Ensure the absolute overlay stays INSIDE the textarea box only */
@@ -231,7 +231,7 @@
 }
 
 textarea {
-  margin-bottom: 0 !important;/* Prevents textarea from pushing elements weirdly */
+  margin-bottom: 0 !important; /* Prevents textarea from pushing elements weirdly */
 }
 
 .hud {
@@ -294,4 +294,4 @@ textarea {
 .counter:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-- }
+}
